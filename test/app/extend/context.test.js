@@ -1,6 +1,5 @@
 'use strict';
 
-const should = require('should');
 const fs = require('fs');
 const path = require('path');
 const mm = require('egg-mock');
@@ -22,98 +21,88 @@ describe('test/app/extend/context.test.js', () => {
     let app;
     afterEach(() => app.close());
 
-    it('env=local: level => debug', done => {
+    it('env=local: level => debug', function* () {
       mm.env('local');
       mm(process.env, 'EGG_LOG', 'none');
       app = utils.app('apps/demo');
+      yield app.ready();
       const logdir = app.config.logger.dir;
 
-      request(app.callback())
+      yield request(app.callback())
       .get('/logger?message=foo')
-      .expect('logger', err => {
-        should.not.exists(err);
+      .expect('logger');
 
-        const errorContent = fs.readFileSync(path.join(logdir, 'common-error.log'), 'utf8');
-        errorContent.should.containEql('nodejs.Error: error foo');
-        errorContent.should.containEql('nodejs.Error: core error foo');
+      const errorContent = fs.readFileSync(path.join(logdir, 'common-error.log'), 'utf8');
+      errorContent.should.containEql('nodejs.Error: error foo');
+      errorContent.should.containEql('nodejs.Error: core error foo');
 
-        const loggerContent = fs.readFileSync(path.join(logdir, 'demo-web.log'), 'utf8');
-        loggerContent.should.containEql('debug foo');
-        loggerContent.should.containEql('info foo');
-        loggerContent.should.containEql('warn foo');
+      const loggerContent = fs.readFileSync(path.join(logdir, 'demo-web.log'), 'utf8');
+      loggerContent.should.containEql('debug foo');
+      loggerContent.should.containEql('info foo');
+      loggerContent.should.containEql('warn foo');
 
-        const coreLoggerContent = fs.readFileSync(path.join(logdir, 'egg-web.log'), 'utf8');
-        coreLoggerContent.should.containEql('core debug foo');
-        coreLoggerContent.should.containEql('core info foo');
-        coreLoggerContent.should.containEql('core warn foo');
-        done();
-      });
+      const coreLoggerContent = fs.readFileSync(path.join(logdir, 'egg-web.log'), 'utf8');
+      coreLoggerContent.should.containEql('core debug foo');
+      coreLoggerContent.should.containEql('core info foo');
+      coreLoggerContent.should.containEql('core warn foo');
     });
 
-    it('env=unittest: level => info', done => {
+    it('env=unittest: level => info', function* () {
       mm.env('unittest');
       app = utils.app('apps/demo');
-      app.ready(() => {
-        const logdir = app.config.logger.dir;
-
-        app.mockContext({
-          userId: '123123',
-          tracer: {
-            traceId: '456456',
-          },
-        });
-
-        request(app.callback())
-        .get('/logger?message=foo')
-        .expect('logger', err => {
-          should.not.exists(err);
-
-          const errorContent = fs.readFileSync(path.join(logdir, 'common-error.log'), 'utf8');
-          errorContent.should.containEql('nodejs.Error: error foo');
-          errorContent.should.containEql('nodejs.Error: core error foo');
-          errorContent.should.match(/\[123123\/[\d\.]+\/456456\/\d+ms GET \/logger\?message=foo]/);
-
-          const loggerContent = fs.readFileSync(path.join(logdir, 'demo-web.log'), 'utf8');
-          loggerContent.should.not.containEql('debug foo');
-          loggerContent.should.containEql('info foo');
-          loggerContent.should.containEql('warn foo');
-
-          const coreLoggerContent = fs.readFileSync(path.join(logdir, 'egg-web.log'), 'utf8');
-          coreLoggerContent.should.not.containEql('core debug foo');
-          coreLoggerContent.should.containEql('core info foo');
-          coreLoggerContent.should.containEql('core warn foo');
-
-          done();
-        });
-      });
-    });
-
-    it('env=prod: level => info', done => {
-      mm.env('unittest');
-      app = utils.app('apps/demo');
+      yield app.ready();
       const logdir = app.config.logger.dir;
 
-      request(app.callback())
-      .get('/logger?message=foo')
-      .expect('logger', err => {
-        should.not.exists(err);
-
-        const errorContent = fs.readFileSync(path.join(logdir, 'common-error.log'), 'utf8');
-        errorContent.should.containEql('nodejs.Error: error foo');
-        errorContent.should.containEql('nodejs.Error: core error foo');
-
-        const loggerContent = fs.readFileSync(path.join(logdir, 'demo-web.log'), 'utf8');
-        loggerContent.should.not.containEql('debug foo');
-        loggerContent.should.containEql('info foo');
-        loggerContent.should.containEql('warn foo');
-
-        const coreLoggerContent = fs.readFileSync(path.join(logdir, 'egg-web.log'), 'utf8');
-        coreLoggerContent.should.not.containEql('core debug foo');
-        coreLoggerContent.should.containEql('core info foo');
-        coreLoggerContent.should.containEql('core warn foo');
-
-        done();
+      app.mockContext({
+        userId: '123123',
+        tracer: {
+          traceId: '456456',
+        },
       });
+
+      yield request(app.callback())
+      .get('/logger?message=foo')
+      .expect('logger');
+
+      const errorContent = fs.readFileSync(path.join(logdir, 'common-error.log'), 'utf8');
+      errorContent.should.containEql('nodejs.Error: error foo');
+      errorContent.should.containEql('nodejs.Error: core error foo');
+      errorContent.should.match(/\[123123\/[\d\.]+\/456456\/\d+ms GET \/logger\?message=foo]/);
+
+      const loggerContent = fs.readFileSync(path.join(logdir, 'demo-web.log'), 'utf8');
+      loggerContent.should.not.containEql('debug foo');
+      loggerContent.should.containEql('info foo');
+      loggerContent.should.containEql('warn foo');
+
+      const coreLoggerContent = fs.readFileSync(path.join(logdir, 'egg-web.log'), 'utf8');
+      coreLoggerContent.should.not.containEql('core debug foo');
+      coreLoggerContent.should.containEql('core info foo');
+      coreLoggerContent.should.containEql('core warn foo');
+    });
+
+    it('env=prod: level => info', function* () {
+      mm.env('unittest');
+      app = utils.app('apps/demo');
+      yield app.ready();
+      const logdir = app.config.logger.dir;
+
+      yield request(app.callback())
+      .get('/logger?message=foo')
+      .expect('logger');
+
+      const errorContent = fs.readFileSync(path.join(logdir, 'common-error.log'), 'utf8');
+      errorContent.should.containEql('nodejs.Error: error foo');
+      errorContent.should.containEql('nodejs.Error: core error foo');
+
+      const loggerContent = fs.readFileSync(path.join(logdir, 'demo-web.log'), 'utf8');
+      loggerContent.should.not.containEql('debug foo');
+      loggerContent.should.containEql('info foo');
+      loggerContent.should.containEql('warn foo');
+
+      const coreLoggerContent = fs.readFileSync(path.join(logdir, 'egg-web.log'), 'utf8');
+      coreLoggerContent.should.not.containEql('core debug foo');
+      coreLoggerContent.should.containEql('core info foo');
+      coreLoggerContent.should.containEql('core warn foo');
     });
   });
 
